@@ -12,7 +12,7 @@ If we place a magnet on the crank of the pedal and then place a hall effect sens
 The same hall effect principle can be applied to determine the wheel speed of the bike. If we place a magnet on the spoke of the wheel and then place a hall effect sensor on the frame of the bike. We could use this to calculate the wheel speed of the bike to determine if we need more or less power to the ESC.
 
 ## Download
-To use this code, simply head over to the [release section](https://github.com/dsbrennan/mec217-bike-control/releases) and download the latest zip file. Once the zip file is extracted on your computer, you should be able to open this up in the [Arduino IDE](https://www.arduino.cc/en/software).
+To use this code, simply head over to the [release section](https://github.com/dsbrennan/mec217-bike-control/releases) and download the [latest zip file](https://github.com/dsbrennan/mec217-bike-control/releases/latest/download/mec217-bike-control.zip). Once the zip file is extracted on your computer, you should be able to open this up in the [Arduino IDE](https://www.arduino.cc/en/software).
 
 ## Pins
 The Arduino needs to communicate with certain inputs/outputs on numbered `pins`. For the purpose of this module, this combination of input/output to `pin` number have been fixed on the bike rig and cannot be changed. You must ensure that any code you upload onto the Arduino connected to the bike rig uses the numbered `pins` highlighted below.
