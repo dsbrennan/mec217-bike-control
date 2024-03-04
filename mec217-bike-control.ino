@@ -20,6 +20,7 @@ const int esc_power_limit = 140;
 const int esc_step_up = 1;
 const int esc_step_down = 5;
 const float wheel_circumforance = 0.12;
+const float wheel_maximum_speed = 25.0;
 //Variables
 unsigned volatile long last_crank_pass;
 unsigned volatile long last_rpm_pass;
@@ -61,17 +62,17 @@ void setup() {
 void loop() {
   //Show Crank LED
   digitalWrite(CRANK_ACTIVITY_LED_PIN, ((digitalRead(CRANK_PIN) == 1) ? LOW : HIGH));
+  //Calculate RPM
+  float rpm_pass_delta = last_rpm_pass - last_rpm_pass_2;
+  float rpm_value = (float)60000.0 / rpm_pass_delta;
+  float rph_value = rpm_value * 60;
+  float rph_meter = rph_value * wheel_circumforance;
+  float kmph = rph_meter / 1000;
+  Serial.print("Wheel spinning at: ");
+  Serial.println(kmph);
   //Last crank pass within time limit
   current_loop_time = millis();
-  if(current_loop_time - last_crank_pass <= crank_pass_maximum_delay){
-    //Calculate RPM
-    float rpm_pass_delta = last_rpm_pass - last_rpm_pass_2;
-    float rpm_value = (float)60000.0 / rpm_pass_delta;
-    float rph_value = rpm_value * 60;
-    float rph_meter = rph_value * wheel_circumforance;
-    float kmph = rph_meter / 1000;
-    // Serial.println("Motor spinning at: ");
-    // Serial.println(kmph);
+  if(current_loop_time - last_crank_pass <= crank_pass_maximum_delay && kmph <= wheel_maximum_speed){
     //Power Up ESC
     digitalWrite(MOTOR_ACTIVITY_LED_PIN, HIGH);
     if(esc_power_output <= esc_power_limit && (esc_power_output + esc_step_up) <= esc_power_limit){
