@@ -15,6 +15,7 @@ const int ESC_PIN = 9;
 //Constants
 const int startup_time = 10000;
 const int crank_pass_maximum_delay = 1500;
+const int wheel_rotation_time = 30000;
 const int esc_initial_power = 55;
 const int esc_power_limit = 140;
 const int esc_step_up = 1;
@@ -25,6 +26,8 @@ const float wheel_maximum_speed = 25.0;
 unsigned volatile long last_crank_pass;
 unsigned volatile long last_rpm_pass;
 unsigned volatile long last_rpm_pass_2;
+unsigned volatile long esc_activation_time;
+unsigned volatile int wheel_rotations_count;
 unsigned long current_loop_time;
 unsigned int esc_power_output;
 Servo esc;
@@ -73,6 +76,12 @@ void loop() {
   //Last crank pass within time limit
   current_loop_time = millis();
   if(current_loop_time - last_crank_pass <= crank_pass_maximum_delay && kmph <= wheel_maximum_speed){
+    //Record first activation time
+    if(esc_activation_time < startup_time){
+      Serial.print("ESC First Activation: ");
+      Serial.println(current_loop_time);
+      esc_activation_time = current_loop_time;
+    }
     //Power Up ESC
     digitalWrite(MOTOR_ACTIVITY_LED_PIN, HIGH);
     if(esc_power_output <= esc_power_limit && (esc_power_output + esc_step_up) <= esc_power_limit){
@@ -99,6 +108,13 @@ void loop() {
       esc.write(0);
     }
   }
+  //Output wheel rotation
+  if(esc_activation_time > startup_time){
+    Serial.print("Total Wheel Rotations (");
+    Serial.print((esc_activation_time + wheel_rotation_time - current_loop_time)/1000);
+    Serial.print("s left): ");
+    Serial.println(wheel_rotations_count);
+  }
   //Pause the system for 0.25s
   delay(250);
 }
@@ -112,5 +128,6 @@ void crank(){
 void rpm(){
   last_rpm_pass_2 = last_rpm_pass;
   last_rpm_pass = millis();
+  if(esc_activation_time + wheel_rotation_time <= last_rpm_pass) wheel_rotations_count++;
 }
 
