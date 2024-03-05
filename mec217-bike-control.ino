@@ -20,15 +20,17 @@ const int esc_initial_power = 55;
 const int esc_power_limit = 140;
 const int esc_step_up = 1;
 const int esc_step_down = 5;
-const float wheel_circumforance = 0.12;
+const float wheel_circumforance = 2.0;
 const float wheel_maximum_speed = 25.0;
 //Variables
 unsigned volatile long last_crank_pass;
 unsigned volatile long last_rpm_pass;
 unsigned volatile long last_rpm_pass_2;
-unsigned volatile long esc_activation_time;
 unsigned volatile int wheel_rotations_count;
 unsigned long current_loop_time;
+unsigned long esc_activation_time;
+unsigned int timer_activation_count;
+unsigned int timer_deactivation_count;
 unsigned int esc_power_output;
 Servo esc;
 
@@ -48,6 +50,9 @@ void setup() {
   //Setup RPM Sensor
   pinMode(RPM_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(RPM_PIN), rpm, FALLING);
+  //Setup Timer
+  timer_activation_count = -1;
+  timer_deactivation_count = -1;
   //Setup ESC
   esc_power_output = esc_initial_power;
   esc.attach(ESC_PIN);
@@ -81,6 +86,7 @@ void loop() {
       Serial.print("ESC First Activation: ");
       Serial.println(current_loop_time);
       esc_activation_time = current_loop_time;
+      timer_activation_count = wheel_rotations_count;
     }
     //Power Up ESC
     digitalWrite(MOTOR_ACTIVITY_LED_PIN, HIGH);
@@ -110,10 +116,15 @@ void loop() {
   }
   //Output wheel rotation
   if(esc_activation_time > startup_time){
-    Serial.print("Total Wheel Rotations (");
-    Serial.print((esc_activation_time + wheel_rotation_time - current_loop_time)/1000);
-    Serial.print("s left): ");
+    Serial.print("Current Wheel Rotations: ");
     Serial.println(wheel_rotations_count);
+    if(esc_activation_time + wheel_rotation_time <= current_loop_time){
+      if(timer_deactivation_count < timer_activation_count){
+        timer_deactivation_count = wheel_rotations_count;
+        Serial.print("Total Wheel Rotations within Time: ");
+        Serial.println(timer_deactivation_count - timer_activation_count);
+      }
+    }
   }
   //Pause the system for 0.25s
   delay(250);
@@ -126,8 +137,8 @@ void crank(){
 
 //Wheel RPM sensor interrupt
 void rpm(){
+  wheel_rotations_count = wheel_rotations_count + 1;
   last_rpm_pass_2 = last_rpm_pass;
   last_rpm_pass = millis();
-  if(esc_activation_time + wheel_rotation_time <= last_rpm_pass) wheel_rotations_count++;
 }
 
