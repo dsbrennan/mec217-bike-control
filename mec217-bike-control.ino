@@ -13,10 +13,10 @@ const int CRANK_PIN = 2;
 const int RPM_PIN = 3;
 const int ESC_PIN = 9;
 //Constants
-const int startup_time = 10000;
+const int startup_time = 5000;
 const int crank_pass_maximum_delay = 1500;
 const int wheel_rotation_time = 30000;
-const int esc_initial_power = 55;
+const int esc_initial_power = 85;
 const int esc_power_limit = 140;
 const int esc_step_up = 1;
 const int esc_step_down = 5;
@@ -64,6 +64,7 @@ void setup() {
   }
   //Activate System ready LED
   digitalWrite(SYSTEM_READY_LED_PIN, HIGH);
+  Serial.println("System Ready");
 }
 
 //Main function loop
@@ -76,8 +77,8 @@ void loop() {
   float rph_value = rpm_value * 60;
   float rph_meter = rph_value * wheel_circumforance;
   float kmph = rph_meter / 1000;
-  Serial.print("Wheel spinning at: ");
-  Serial.println(kmph);
+  // Serial.print("Wheel spinning at: ");
+  // Serial.println(kmph);
   //Last crank pass within time limit
   current_loop_time = millis();
   if(current_loop_time - last_crank_pass <= crank_pass_maximum_delay && kmph <= wheel_maximum_speed){
@@ -96,8 +97,8 @@ void loop() {
       esc.write(esc_power_output);
       esc_power_output += esc_step_up;
     }else{
-      Serial.print("ESC Power Output (Limited): ");
-      Serial.println(esc_power_limit);
+      // Serial.print("ESC Power Output (Limited): ");
+      // Serial.println(esc_power_limit);
       esc.write(esc_power_limit);
     }
   }else{
@@ -110,7 +111,7 @@ void loop() {
       esc.write(esc_power_output);
     }else{
       esc_power_output = esc_initial_power;
-      Serial.println("ESC Power STOP");
+      // Serial.println("ESC Power STOP");
       esc.write(0);
     }
   }
