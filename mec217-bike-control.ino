@@ -29,8 +29,8 @@ unsigned volatile long last_rpm_pass_2;
 unsigned volatile int wheel_rotations_count;
 unsigned long current_loop_time;
 unsigned long esc_activation_time;
-unsigned int timer_activation_count;
-unsigned int timer_deactivation_count;
+signed int timer_activation_count;
+signed int timer_deactivation_count;
 unsigned int esc_power_output;
 Servo esc;
 
@@ -116,14 +116,18 @@ void loop() {
   }
   //Output wheel rotation
   if(esc_activation_time > startup_time){
-    Serial.print("Current Wheel Rotations: ");
-    Serial.println(wheel_rotations_count);
     if(esc_activation_time + wheel_rotation_time <= current_loop_time){
       if(timer_deactivation_count < timer_activation_count){
         timer_deactivation_count = wheel_rotations_count;
         Serial.print("Total Wheel Rotations within Time: ");
         Serial.println(timer_deactivation_count - timer_activation_count);
       }
+    }else{
+      Serial.print("Current Wheel Rotations: ");
+      Serial.print(wheel_rotations_count);
+      Serial.print(" (");
+      Serial.print(((esc_activation_time + wheel_rotation_time) - current_loop_time)/1000);
+      Serial.println("s) left");
     }
   }
   //Pause the system for 0.25s
