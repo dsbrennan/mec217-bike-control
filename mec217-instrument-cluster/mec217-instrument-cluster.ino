@@ -5,6 +5,7 @@
  *  Copyright 2024, MIT Licence
  **/
 #include "Arduino_GigaDisplay_GFX.h"
+#include "Arduino_GigaDisplayTouch.h"
 #include <math.h>
 
 // pins
@@ -55,13 +56,17 @@
 #define ROTATION_TIME_LIMIT 30000 // wheel_rotation_time in student code
 #define CRANK_CIRCUMFORANCE 0.5 // not in student code
 #define WHEEL_CIRCUMFORANCE 2.0 // wheel_circumforance in student code
+#define TOUCH_RESET_MINIMUM_DELAY 500 // not in student code
+#define TOUCH_RESET_MAXIMUM_DELAY 1000 // not in student code
 
 // visual output variables
 GigaDisplay_GFX display;
 GFXcanvas1 canvas(SCREEN_HEIGHT, (SCREEN_HEIGHT/4)*3);// height will depend upon dial radius and start and end degree
+Arduino_GigaDisplayTouch touchDetector;
 
-// speed variables
+// control variables
 unsigned volatile long wheel_rotation_counter;
+unsigned volatile long touch_interupt_time;
 unsigned volatile long crank_interupt_current_time;
 unsigned volatile long crank_interupt_previous_time;
 unsigned volatile long wheel_interupt_current_time;
@@ -90,6 +95,7 @@ void setup() {
   delay(3000);
   // set counting default values
   wheel_rotation_counter = 0;
+  touch_interupt_time = 0;
   crank_interupt_current_time = 0;
   crank_interupt_previous_time = 0;
   wheel_interupt_current_time = 0;
@@ -104,6 +110,9 @@ void setup() {
   // setup wheel sensor
   pinMode(WHEEL_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(WHEEL_PIN), wheelInterupt, FALLING);
+  // setup touch
+  touchDetector.begin();
+  touchDetector.onDetect(touchInterupt);
   //setup blank horizontal screen
   display.begin();  // Init display library
   display.setRotation(SCREEN_ROTATE);
@@ -168,13 +177,29 @@ void loop() {
   */
   current_loop_time = millis();
   if(
+    touch_interupt_time > 0 && timer_activation_count >= 0
+    && current_loop_time - touch_interupt_time > TOUCH_RESET_MINIMUM_DELAY 
+    && current_loop_time - touch_interupt_time < TOUCH_RESET_MAXIMUM_DELAY
+  ){
+    // reset system
+    wheel_rotation_counter = 0;
+    crank_interupt_current_time = 0;
+    crank_interupt_previous_time = 0;
+    wheel_interupt_current_time = 0;
+    wheel_interupt_previous_time = 0;
+    timer_activation_time = 0;
+    timer_activation_count = -1;
+    timer_deactivation_count = -1;
+    Serial.println("system reset");
+  }
+  if(
     crank_interupt_current_time > 0 && crank_interupt_previous_time > 0
     && (crank_interupt_current_time - crank_interupt_previous_time > 0)
     && current_loop_time - crank_interupt_current_time <= CRANK_PASS_MAXIMUM_DELAY
   ){
     // start timer
     if (timer_activation_count < 0 && timer_deactivation_count < 0){
-      Serial.println("Starting timer");
+      Serial.println("starting timer");
       timer_activation_time = current_loop_time;
       timer_activation_count = wheel_rotation_counter;
     }
@@ -287,11 +312,11 @@ void loop() {
   );
 
   // simulate
-  if (current_loop_time > 13000){
+  if (current_loop_time - touch_interupt_time > 13000){
     crank_interupt_previous_time = current_loop_time - 1000;
     crank_interupt_current_time = current_loop_time;
     wheel_rotation_counter = (current_loop_time - 13000) / 2000;
-    float acceleration = 10000.0 - (((current_loop_time - 13000.0)/1000.0)*500.0);
+    float acceleration = 10000.0 - (((current_loop_time - touch_interupt_time - 13000.0)/1000.0)*500.0);
     wheel_interupt_previous_time = current_loop_time - (acceleration > 290 ? acceleration : 290);
     wheel_interupt_current_time = current_loop_time;
   }
@@ -317,6 +342,16 @@ void wheelInterupt(){
   wheel_rotation_counter = wheel_rotation_counter + 1;
   wheel_interupt_previous_time = wheel_interupt_current_time;
   wheel_interupt_current_time = millis();
+}
+
+/*
+  Touch Interupt
+  --------------
+*/
+void touchInterupt(uint8_t contacts, GDTpoint_t* points){
+  if(contacts >= 3){
+    touch_interupt_time = millis();
+  }
 }
 
 /*
