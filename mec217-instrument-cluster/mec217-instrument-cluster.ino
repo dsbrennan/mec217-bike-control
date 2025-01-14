@@ -56,10 +56,13 @@ uint16_t previous_wheel_arm_outside_x = 0;
 uint16_t previous_wheel_arm_outside_y = 0;
 
 void setup() {
+  /*
+    System setup
+  */
   //setup serial
   Serial.begin(9600);
   delay(3000);
-  //set variable defailt values
+  //set counting default values
   rotation_counter = 0;
   crank_speed = 0.0;
   wheel_speed = 0.0;
@@ -67,10 +70,16 @@ void setup() {
   display.begin();  // Init display library
   display.setRotation(SCREEN_ROTATE);
   display.fillScreen(COLOUR_BLACK);
-  //setup instrument cluster
-  //ic - arc
+  
+  /*
+    Setup Instrument Cluster
+    -----------------------
+    The intrument cluster displays the number of rotations within the time period, the current crank speed (how fast you are peddling),
+    and the wheel speed (how fast the back wheel of the bike is going after your gearbox increases the wheels speed).
+  */
+  // arc
   drawArc(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_START_DEGREE, DIAL_END_DEGREE, DIAL_RADIUS, 3, COLOUR_WHITE);
-  //ic - tickers
+  // tickers
   for (double i = DIAL_START_DEGREE; i <= DIAL_END_DEGREE; i+= DIAL_TICKER_STEP){
     float angle = i < 0 ? -i : i;
     float radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
@@ -84,7 +93,7 @@ void setup() {
       COLOUR_WHITE
     );
   }
-  //ic - labels
+  // labels
   int dial_label_degrees = (DIAL_END_DEGREE - DIAL_START_DEGREE) / ((DIAL_LABEL_END - DIAL_LABEL_START) / DIAL_LABEL_STEP);
   char numerical_text[16];
   for (int i = 0; i <= ((DIAL_LABEL_END - DIAL_LABEL_START) / DIAL_LABEL_STEP); i++) {
@@ -100,7 +109,7 @@ void setup() {
       numerical_text, COLOUR_WHITE, COLOUR_BLACK, 2
     );
   }
-  //ic - counter 
+  // counter 
   display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_GRAY);
   displayCenteredText(
     DIAL_X_POSITION, DIAL_Y_POSITION + 5, "0", COLOUR_WHITE, COLOUR_GRAY, DIAL_ROTATION_COUNTER_TEXT_SCALE
@@ -109,8 +118,15 @@ void setup() {
 
 
 void loop() {
-  //canvas section
-  //clear old arms
+  /*
+    Clear previous displayed speed arms
+    -----------------------------------
+    As the previously displayed arms (crank arm and wheel arm) have been writen to both the
+    offscreen canvas and the display, they need to be reset on both output. The canvas needs
+    the value reset to 0 and the display needs the value set to the same background colour as
+    the display.
+  */
+  // crank arm
   canvas.drawLine(previous_crank_arm_inside_x, previous_crank_arm_inside_y, previous_crank_arm_outside_x, previous_crank_arm_outside_y, 0);
   display.drawLine(
     DIAL_X_POSITION - (canvas.width() / 2) + previous_crank_arm_inside_x,
@@ -119,6 +135,7 @@ void loop() {
     DIAL_Y_POSITION - ((canvas.height() / 3) * 2) + previous_crank_arm_outside_y,
     COLOUR_BLACK
   );
+  // wheel arm
   canvas.drawLine(previous_wheel_arm_inside_x, previous_wheel_arm_inside_y, previous_wheel_arm_outside_x, previous_wheel_arm_outside_y, 0);
   display.drawLine(
     DIAL_X_POSITION - (canvas.width() / 2) + previous_wheel_arm_inside_x,
@@ -128,7 +145,15 @@ void loop() {
     COLOUR_BLACK
   );
   
-  //calculate crank speed arm
+  /*
+    Calculate new arm positions
+    ---------------------------
+    Once the new positions of the arms (crank arm and wheel arm) have been calculated
+    they need to be written to the offscreen canvas. As the canvas is a 2 colour
+    canvas (background and foreground), the values of the pixels need to only be 
+    set to 1 as the colour for the foreground is decided when writing to the display. 
+  */
+  // crank arm
   float crank_degree = DIAL_START_DEGREE + (crank_speed * DIAL_TICKER_STEP);
   float angle = crank_degree < 0 ? -crank_degree : crank_degree;
   float radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
@@ -139,7 +164,7 @@ void loop() {
   previous_crank_arm_outside_x = crank_degree < 0 ? DIAL_CANVAS_ARM_X_ORIGIN - (x_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_X_ORIGIN + (x_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER);
   previous_crank_arm_outside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER);
   canvas.drawLine(previous_crank_arm_inside_x, previous_crank_arm_inside_y, previous_crank_arm_outside_x, previous_crank_arm_outside_y, 1);
-  //calcualte wheel speed arm
+  // wheel arm
   float wheel_degree = DIAL_START_DEGREE + (wheel_speed * DIAL_TICKER_STEP);
   angle = wheel_degree < 0 ? -wheel_degree : wheel_degree;
   radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
@@ -151,26 +176,36 @@ void loop() {
   previous_wheel_arm_outside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER);
   canvas.drawLine(previous_wheel_arm_inside_x, previous_wheel_arm_inside_y, previous_wheel_arm_outside_x, previous_wheel_arm_outside_y, 1);
 
-  //display section
-  //write canvas to screen
+  /*
+    Write graphical components to display
+    -------------------------------------
+    Write the offscreen canvas to the display and re write the counter to the display
+    with the latest value.
+  */
+  // canvas -> display
   display.drawBitmap(DIAL_X_POSITION - (canvas.width() / 2), DIAL_Y_POSITION - ((canvas.height() / 3) * 2), canvas.getBuffer(), canvas.width(), canvas.height(), COLOUR_GREEN);
-  //current number of rotations
+  // number of rotations
   char numerical_text[16];
   itoa(rotation_counter, numerical_text, 10);
-  display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_RED);
+  canvas.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_RED);
   displayCenteredText(
     DIAL_X_POSITION, DIAL_Y_POSITION + 5, numerical_text, COLOUR_WHITE, COLOUR_RED, DIAL_ROTATION_COUNTER_TEXT_SCALE
   );
-
 
   //simulate
   rotation_counter++;
   crank_speed+=0.25;
   wheel_speed+=0.5;
-  //sleep
+  // sleep thread
   delay(50);
 }
 
+/*
+  Draw Arc
+  --------
+  Draw an arced line around a point (x, y) from the start angle (start_angle) 
+  to the end angle (end_angle) with a given radius (radius) and thickness (thickness).
+*/
 void drawArc(uint16_t x, uint16_t y, int16_t start_angle, int16_t end_angle, uint16_t radius, uint16_t thickness, uint16_t colour) {
   //ensure angle is between -180 to 180
   if (start_angle < -180 || start_angle > end_angle) {
@@ -194,6 +229,11 @@ void drawArc(uint16_t x, uint16_t y, int16_t start_angle, int16_t end_angle, uin
   }
 }
 
+/*
+  Display Centered Text
+  ---------------------
+  Draw text centered around a point (x, y)
+*/
 void displayCenteredText(uint16_t x, uint16_t y, char text[], uint16_t text_colour, uint16_t background_colour, uint8_t size) {
   int item_count = strlen(text);
   int half_count = item_count / 2;
