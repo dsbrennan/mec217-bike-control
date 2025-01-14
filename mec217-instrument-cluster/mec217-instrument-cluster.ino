@@ -1,5 +1,15 @@
+/**
+ *  Original Author: D S Brennan (github.com/dsbrennan)
+ *  Created: 13/01/2024
+ *
+ *  Copyright 2024, MIT Licence
+ **/
 #include "Arduino_GigaDisplay_GFX.h"
 #include <math.h>
+
+// pins
+#define CRANK_PIN 2
+#define WHEEL_PIN 3
 
 // colours
 #define COLOUR_BLACK 0x0000
@@ -9,7 +19,7 @@
 #define COLOUR_GRAY 0x8C71
 
 // display
-#define SCREEN_ROTATE 3
+#define SCREEN_ROTATE 1
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 480
 #define CHAR_WIDTH 6
@@ -35,15 +45,31 @@
 #define DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER 0.74
 #define DIAL_ROTATION_COUNTER_RADIUS 120 //SCREEN_HEIGHT / 4
 #define DIAL_ROTATION_COUNTER_TEXT_SCALE 15
+#define DIAL_COUNTDOWN_X_POSITION 100 // SCREEN_WIDTH / 8
+#define DIAL_COUNTDOWN_Y_POSITION 96 // SCREEN_HEIGHT /  5
+#define DIAL_COUNTDOWN_RADIUS 80 // SCREEN_HEIGHT / 6
+#define DIAL_COUNTDOWN_TEXT_SCALE 9
+
+// control system
+#define CRANK_PASS_MAXIMUM_DELAY 1500 // crank_pass_maximum_delay in student code
+#define ROTATION_TIME_LIMIT 30000 // wheel_rotation_time in student code
+#define CRANK_CIRCUMFORANCE 0.5 // not in student code
+#define WHEEL_CIRCUMFORANCE 2.0 // wheel_circumforance in student code
 
 // visual output variables
 GigaDisplay_GFX display;
 GFXcanvas1 canvas(SCREEN_HEIGHT, (SCREEN_HEIGHT/4)*3);// height will depend upon dial radius and start and end degree
 
 // speed variables
-unsigned int rotation_counter;
-float crank_speed;
-float wheel_speed;
+unsigned volatile long wheel_rotation_counter;
+unsigned volatile long crank_interupt_current_time;
+unsigned volatile long crank_interupt_previous_time;
+unsigned volatile long wheel_interupt_current_time;
+unsigned volatile long wheel_interupt_previous_time;
+unsigned long current_loop_time;
+unsigned long timer_activation_time;
+signed int timer_activation_count;
+signed int timer_deactivation_count;
 
 // previous arm positions
 uint16_t previous_crank_arm_inside_x = 0;
@@ -59,13 +85,25 @@ void setup() {
   /*
     System setup
   */
-  //setup serial
+  // setup serial
   Serial.begin(9600);
   delay(3000);
-  //set counting default values
-  rotation_counter = 0;
-  crank_speed = 0.0;
-  wheel_speed = 0.0;
+  // set counting default values
+  wheel_rotation_counter = 0;
+  crank_interupt_current_time = 0;
+  crank_interupt_previous_time = 0;
+  wheel_interupt_current_time = 0;
+  wheel_interupt_previous_time = 0;
+  current_loop_time = 0;
+  timer_activation_time = 0;
+  timer_activation_count = -1;
+  timer_deactivation_count = -1;
+  // setup crank sensor
+  pinMode(CRANK_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(CRANK_PIN), crankInterupt, FALLING);
+  // setup wheel sensor
+  pinMode(WHEEL_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(WHEEL_PIN), wheelInterupt, FALLING);
   //setup blank horizontal screen
   display.begin();  // Init display library
   display.setRotation(SCREEN_ROTATE);
@@ -109,15 +147,64 @@ void setup() {
       numerical_text, COLOUR_WHITE, COLOUR_BLACK, 2
     );
   }
-  // counter 
+  // counters 
   display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_GRAY);
   displayCenteredText(
     DIAL_X_POSITION, DIAL_Y_POSITION + 5, "0", COLOUR_WHITE, COLOUR_GRAY, DIAL_ROTATION_COUNTER_TEXT_SCALE
+  );
+  itoa(ROTATION_TIME_LIMIT/1000, numerical_text, 10);
+  display.fillCircle(DIAL_COUNTDOWN_X_POSITION, DIAL_COUNTDOWN_Y_POSITION, DIAL_COUNTDOWN_RADIUS, COLOUR_GRAY);
+  displayCenteredText(
+    DIAL_COUNTDOWN_X_POSITION,  DIAL_COUNTDOWN_Y_POSITION + 5, numerical_text, COLOUR_WHITE, COLOUR_GRAY, DIAL_COUNTDOWN_TEXT_SCALE
   );
 }
 
 
 void loop() {
+  /*
+    Control System Monitoring
+    -------------------------
+    Monitor the control system by mirroring key calculations
+  */
+  current_loop_time = millis();
+  if(
+    crank_interupt_current_time > 0 && crank_interupt_previous_time > 0
+    && (crank_interupt_current_time - crank_interupt_previous_time > 0)
+    && current_loop_time - crank_interupt_current_time <= CRANK_PASS_MAXIMUM_DELAY
+  ){
+    // start timer
+    if (timer_activation_count < 0 && timer_deactivation_count < 0){
+      Serial.println("Starting timer");
+      timer_activation_time = current_loop_time;
+      timer_activation_count = wheel_rotation_counter;
+    }
+  }
+  // end timer
+  if (timer_activation_time > 0 && current_loop_time >= timer_activation_time + ROTATION_TIME_LIMIT){
+    if (timer_deactivation_count < 0){
+      Serial.println("ending timer");
+      timer_deactivation_count = wheel_rotation_counter;
+    }
+  }
+  // crank speed
+  float crank_speed = 0.0;
+  if(crank_interupt_current_time > 0 && crank_interupt_previous_time > 0){
+    float crank_pass_delta = crank_interupt_current_time - crank_interupt_previous_time;
+    float rpm_value = (float)60000.0 / crank_pass_delta;
+    float rph_value = rpm_value * 60;
+    float rph_meter = rph_value * CRANK_CIRCUMFORANCE;
+    crank_speed = rph_meter / 1000;
+  }
+  // wheel speed
+  float wheel_speed = 0.0;
+  if(wheel_interupt_current_time > 0 && wheel_interupt_previous_time > 0){
+    float wheel_pass_delta = wheel_interupt_current_time - wheel_interupt_previous_time;
+    float rpm_value = (float)60000.0 / wheel_pass_delta;
+    float rph_value = rpm_value * 60;
+    float rph_meter = rph_value * WHEEL_CIRCUMFORANCE;
+    wheel_speed = rph_meter / 1000;
+  }
+
   /*
     Clear previous displayed speed arms
     -----------------------------------
@@ -186,18 +273,50 @@ void loop() {
   display.drawBitmap(DIAL_X_POSITION - (canvas.width() / 2), DIAL_Y_POSITION - ((canvas.height() / 3) * 2), canvas.getBuffer(), canvas.width(), canvas.height(), COLOUR_GREEN);
   // number of rotations
   char numerical_text[16];
-  itoa(rotation_counter, numerical_text, 10);
-  canvas.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_RED);
+  bool timer_active = timer_activation_time > 0 && current_loop_time < timer_activation_time + ROTATION_TIME_LIMIT;
+  itoa((timer_active ? wheel_rotation_counter : timer_deactivation_count) - timer_activation_count, numerical_text, 10);
+  display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, timer_active ? COLOUR_RED : COLOUR_GRAY);
   displayCenteredText(
-    DIAL_X_POSITION, DIAL_Y_POSITION + 5, numerical_text, COLOUR_WHITE, COLOUR_RED, DIAL_ROTATION_COUNTER_TEXT_SCALE
+    DIAL_X_POSITION, DIAL_Y_POSITION + 5, numerical_text, COLOUR_WHITE, timer_active ? COLOUR_RED : COLOUR_GRAY, DIAL_ROTATION_COUNTER_TEXT_SCALE
+  );
+  // number of seconds left
+  itoa((timer_active ? (ROTATION_TIME_LIMIT - (current_loop_time - timer_activation_time)) : ROTATION_TIME_LIMIT) / 1000, numerical_text, 10);
+  display.fillCircle(DIAL_COUNTDOWN_X_POSITION, DIAL_COUNTDOWN_Y_POSITION, DIAL_COUNTDOWN_RADIUS, timer_active ? COLOUR_GREEN : COLOUR_GRAY);
+  displayCenteredText(
+    DIAL_COUNTDOWN_X_POSITION,  DIAL_COUNTDOWN_Y_POSITION + 5, numerical_text, COLOUR_WHITE, timer_active ? COLOUR_GREEN : COLOUR_GRAY, DIAL_COUNTDOWN_TEXT_SCALE
   );
 
-  //simulate
-  rotation_counter++;
-  crank_speed+=0.25;
-  wheel_speed+=0.5;
+  // simulate
+  if (current_loop_time > 13000){
+    crank_interupt_previous_time = current_loop_time - 1000;
+    crank_interupt_current_time = current_loop_time;
+    wheel_rotation_counter = (current_loop_time - 13000) / 2000;
+    float acceleration = 10000.0 - (((current_loop_time - 13000.0)/1000.0)*500.0);
+    wheel_interupt_previous_time = current_loop_time - (acceleration > 290 ? acceleration : 290);
+    wheel_interupt_current_time = current_loop_time;
+  }
+
   // sleep thread
   delay(50);
+}
+
+/*
+  Crank Sensor Interupt
+  ---------------------
+*/
+void crankInterupt(){
+  crank_interupt_previous_time = crank_interupt_current_time;
+  crank_interupt_current_time = millis();
+}
+
+/*
+  Wheel Sensor Interupt
+  ---------------------
+*/
+void wheelInterupt(){
+  wheel_rotation_counter = wheel_rotation_counter + 1;
+  wheel_interupt_previous_time = wheel_interupt_current_time;
+  wheel_interupt_current_time = millis();
 }
 
 /*
