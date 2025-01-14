@@ -2,43 +2,43 @@
 #include <math.h>
 
 // colours
-#define colour_black 0x0000
-#define colour_white 0xFFFF
-#define colour_red 0xD800
-#define colour_green 0x06E0
-#define colour_grey 0x8C71
+#define COLOUR_BLACK 0x0000
+#define COLOUR_WHITE 0xFFFF
+#define COLOUR_RED 0xD800
+#define COLOUR_GREEN 0x06E0
+#define COLOUR_GRAY 0x8C71
 
 // display
-#define screen_rotate 3
-#define screen_width 800
-#define screen_height 480
-#define char_width 6
-#define char_height 8
+#define SCREEN_ROTATE 3
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 480
+#define CHAR_WIDTH 6
+#define CHAR_HEIGHT 8
 
 // cluster layout
-#define dial_x_position 400 // screen width / 2
-#define dial_y_position 280 // screen height / 2 + 30
-#define dial_start_degree -120
-#define dial_end_degree 120
-#define dial_radius 240 // screen height / 2
-#define dial_label_start 0
-#define dial_label_end 50
-#define dial_label_step 5
-#define dial_label_multiplier 0.80
-#define dial_ticker_step 4.8 // dial end degree - dial start degree / dial label end - dail label start 
-#define dial_ticker_outside_multiplier 0.95
-#define dial_ticker_inside_multiplier 0.90
-#define dial_canvas_arm_x_origin 240 // canvas width / 2
-#define dial_canvas_arm_y_origin 240 // canvas height / 2 * 3
-#define dial_arm_inside_multiplier 0.505 // ratio of dial_radius to rotation_counter_radius
-#define dial_crank_arm_outside_multiplier 0.6
-#define dial_wheel_arm_outside_multiplier 0.74
-#define rotation_counter_radius 120 //screen_height / 4
-#define rotation_counter_text_scale 15
+#define DIAL_X_POSITION 400 // SCREEN_WIDTH / 2
+#define DIAL_Y_POSITION 280 // SCREEN_HEIGHT / 2 + padding (30 in this case)
+#define DIAL_START_DEGREE -120
+#define DIAL_END_DEGREE 120
+#define DIAL_RADIUS 240 // SCREEN_HEIGHT / 2
+#define DIAL_LABEL_START 0
+#define DIAL_LABEL_END 50
+#define DIAL_LABEL_STEP 5
+#define DIAL_LABEL_MULTIPLIER 0.80
+#define DIAL_TICKER_STEP 4.8 // (DIAL_END_DEGREE - DIAL_START_DEGREE) / (DIAL_LABEL_END - DIAL_LABEL_START)
+#define DIAL_TICKER_OUTSIDE_MULTIPLIER 0.95
+#define DIAL_TICKER_INSIDE_MULTIPLIER 0.90
+#define DIAL_CANVAS_ARM_X_ORIGIN 240 // CANVAS_WIDTH / 2
+#define DIAL_CANVAS_ARM_Y_ORIGIN 240 // CANVAS_HEIGHT / 2 * 3
+#define DIAL_ARM_INSIDE_MULTIPLIER 0.505 // ratio of DIAL_RADIUS to DIAL_ROTATION_COUNTER_RADIUS
+#define DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER 0.6
+#define DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER 0.74
+#define DIAL_ROTATION_COUNTER_RADIUS 120 //SCREEN_HEIGHT / 4
+#define DIAL_ROTATION_COUNTER_TEXT_SCALE 15
 
 // visual output variables
 GigaDisplay_GFX display;
-GFXcanvas1 canvas(screen_height, (screen_height/4)*3);// height will depend upon dial radius and start and end degree
+GFXcanvas1 canvas(SCREEN_HEIGHT, (SCREEN_HEIGHT/4)*3);// height will depend upon dial radius and start and end degree
 
 // speed variables
 unsigned int rotation_counter;
@@ -65,45 +65,45 @@ void setup() {
   wheel_speed = 0.0;
   //setup blank horizontal screen
   display.begin();  // Init display library
-  display.setRotation(screen_rotate);
-  display.fillScreen(colour_black);
+  display.setRotation(SCREEN_ROTATE);
+  display.fillScreen(COLOUR_BLACK);
   //setup instrument cluster
   //ic - arc
-  drawArc(dial_x_position, dial_y_position, dial_start_degree, dial_end_degree, dial_radius, 3, colour_white);
+  drawArc(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_START_DEGREE, DIAL_END_DEGREE, DIAL_RADIUS, 3, COLOUR_WHITE);
   //ic - tickers
-  for (double i = dial_start_degree; i <= dial_end_degree; i+= dial_ticker_step){
+  for (double i = DIAL_START_DEGREE; i <= DIAL_END_DEGREE; i+= DIAL_TICKER_STEP){
     float angle = i < 0 ? -i : i;
     float radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
-    float y_increment = dial_radius * sin(radians_angle);
-    float x_increment = dial_radius * cos(radians_angle);
+    float y_increment = DIAL_RADIUS * sin(radians_angle);
+    float x_increment = DIAL_RADIUS * cos(radians_angle);
     display.drawLine(
-      i < 0 ? dial_x_position - (dial_ticker_outside_multiplier * x_increment) : dial_x_position + (dial_ticker_outside_multiplier * x_increment),
-      angle < 90 ? dial_y_position - (dial_ticker_outside_multiplier * y_increment) : dial_y_position + (dial_ticker_outside_multiplier * y_increment), 
-      i < 0 ? dial_x_position - (dial_ticker_inside_multiplier * x_increment) : dial_x_position + (dial_ticker_inside_multiplier * x_increment),
-      angle < 90 ? dial_y_position - (dial_ticker_inside_multiplier * y_increment) : dial_y_position + (dial_ticker_inside_multiplier * y_increment), 
-      colour_white
+      i < 0 ? DIAL_X_POSITION - (DIAL_TICKER_OUTSIDE_MULTIPLIER * x_increment) : DIAL_X_POSITION + (DIAL_TICKER_OUTSIDE_MULTIPLIER * x_increment),
+      angle < 90 ? DIAL_Y_POSITION - (DIAL_TICKER_OUTSIDE_MULTIPLIER * y_increment) : DIAL_Y_POSITION + (DIAL_TICKER_OUTSIDE_MULTIPLIER * y_increment), 
+      i < 0 ? DIAL_X_POSITION - (DIAL_TICKER_INSIDE_MULTIPLIER * x_increment) : DIAL_X_POSITION + (DIAL_TICKER_INSIDE_MULTIPLIER * x_increment),
+      angle < 90 ? DIAL_Y_POSITION - (DIAL_TICKER_INSIDE_MULTIPLIER * y_increment) : DIAL_Y_POSITION + (DIAL_TICKER_INSIDE_MULTIPLIER * y_increment), 
+      COLOUR_WHITE
     );
   }
   //ic - labels
-  int dial_label_degrees = (dial_end_degree - dial_start_degree) / ((dial_label_end - dial_label_start) / dial_label_step);
+  int dial_label_degrees = (DIAL_END_DEGREE - DIAL_START_DEGREE) / ((DIAL_LABEL_END - DIAL_LABEL_START) / DIAL_LABEL_STEP);
   char numerical_text[16];
-  for (int i = 0; i <= ((dial_label_end - dial_label_start) / dial_label_step); i++) {
-    float label_angle = dial_start_degree + (i * dial_label_degrees);
+  for (int i = 0; i <= ((DIAL_LABEL_END - DIAL_LABEL_START) / DIAL_LABEL_STEP); i++) {
+    float label_angle = DIAL_START_DEGREE + (i * dial_label_degrees);
     float angle = label_angle < 0 ? -label_angle : label_angle;
     float radians_angle =  (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
-    float y_increment = dial_label_multiplier * dial_radius * sin(radians_angle);
-    float x_increment = dial_label_multiplier * dial_radius * cos(radians_angle);
-    itoa(dial_label_start + (i * dial_label_step), numerical_text, 10);
+    float y_increment = DIAL_LABEL_MULTIPLIER * DIAL_RADIUS * sin(radians_angle);
+    float x_increment = DIAL_LABEL_MULTIPLIER * DIAL_RADIUS * cos(radians_angle);
+    itoa(DIAL_LABEL_START + (i * DIAL_LABEL_STEP), numerical_text, 10);
     displayCenteredText(
-      label_angle < 0 ? dial_x_position - x_increment : dial_x_position + x_increment,
-      angle < 90 ? dial_y_position - y_increment : dial_y_position + y_increment,
-      numerical_text, colour_white, colour_black, 2
+      label_angle < 0 ? DIAL_X_POSITION - x_increment : DIAL_X_POSITION + x_increment,
+      angle < 90 ? DIAL_Y_POSITION - y_increment : DIAL_Y_POSITION + y_increment,
+      numerical_text, COLOUR_WHITE, COLOUR_BLACK, 2
     );
   }
   //ic - counter 
-  display.fillCircle(dial_x_position, dial_y_position, rotation_counter_radius, colour_grey);
+  display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_GRAY);
   displayCenteredText(
-    dial_x_position, dial_y_position + 5, "0", colour_white, colour_grey, rotation_counter_text_scale
+    DIAL_X_POSITION, DIAL_Y_POSITION + 5, "0", COLOUR_WHITE, COLOUR_GRAY, DIAL_ROTATION_COUNTER_TEXT_SCALE
   );
 }
 
@@ -113,53 +113,53 @@ void loop() {
   //clear old arms
   canvas.drawLine(previous_crank_arm_inside_x, previous_crank_arm_inside_y, previous_crank_arm_outside_x, previous_crank_arm_outside_y, 0);
   display.drawLine(
-    dial_x_position - (canvas.width() / 2) + previous_crank_arm_inside_x,
-    dial_y_position - ((canvas.height() / 3) * 2) + previous_crank_arm_inside_y,
-    dial_x_position - (canvas.width() / 2) + previous_crank_arm_outside_x,
-    dial_y_position - ((canvas.height() / 3) * 2) + previous_crank_arm_outside_y,
-    colour_black
+    DIAL_X_POSITION - (canvas.width() / 2) + previous_crank_arm_inside_x,
+    DIAL_Y_POSITION - ((canvas.height() / 3) * 2) + previous_crank_arm_inside_y,
+    DIAL_X_POSITION - (canvas.width() / 2) + previous_crank_arm_outside_x,
+    DIAL_Y_POSITION - ((canvas.height() / 3) * 2) + previous_crank_arm_outside_y,
+    COLOUR_BLACK
   );
   canvas.drawLine(previous_wheel_arm_inside_x, previous_wheel_arm_inside_y, previous_wheel_arm_outside_x, previous_wheel_arm_outside_y, 0);
   display.drawLine(
-    dial_x_position - (canvas.width() / 2) + previous_wheel_arm_inside_x,
-    dial_y_position - ((canvas.height() / 3) * 2) + previous_wheel_arm_inside_y,
-    dial_x_position - (canvas.width() / 2) + previous_wheel_arm_outside_x,
-    dial_y_position - ((canvas.height() / 3) * 2) + previous_wheel_arm_outside_y,
-    colour_black
+    DIAL_X_POSITION - (canvas.width() / 2) + previous_wheel_arm_inside_x,
+    DIAL_Y_POSITION - ((canvas.height() / 3) * 2) + previous_wheel_arm_inside_y,
+    DIAL_X_POSITION - (canvas.width() / 2) + previous_wheel_arm_outside_x,
+    DIAL_Y_POSITION - ((canvas.height() / 3) * 2) + previous_wheel_arm_outside_y,
+    COLOUR_BLACK
   );
   
   //calculate crank speed arm
-  float crank_degree = dial_start_degree + (crank_speed * dial_ticker_step);
+  float crank_degree = DIAL_START_DEGREE + (crank_speed * DIAL_TICKER_STEP);
   float angle = crank_degree < 0 ? -crank_degree : crank_degree;
   float radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
-  float y_increment = dial_radius * sin(radians_angle);
-  float x_increment = dial_radius * cos(radians_angle);
-  previous_crank_arm_inside_x = crank_degree < 0 ? dial_canvas_arm_x_origin - (x_increment * dial_arm_inside_multiplier) : dial_canvas_arm_x_origin + (x_increment * dial_arm_inside_multiplier);
-  previous_crank_arm_inside_y = angle < 90 ? dial_canvas_arm_y_origin - (y_increment * dial_arm_inside_multiplier) : dial_canvas_arm_y_origin + (y_increment * dial_arm_inside_multiplier);
-  previous_crank_arm_outside_x = crank_degree < 0 ? dial_canvas_arm_x_origin - (x_increment * dial_crank_arm_outside_multiplier) : dial_canvas_arm_x_origin + (x_increment * dial_crank_arm_outside_multiplier);
-  previous_crank_arm_outside_y = angle < 90 ? dial_canvas_arm_y_origin - (y_increment * dial_crank_arm_outside_multiplier) : dial_canvas_arm_y_origin + (y_increment * dial_crank_arm_outside_multiplier);
+  float y_increment = DIAL_RADIUS * sin(radians_angle);
+  float x_increment = DIAL_RADIUS * cos(radians_angle);
+  previous_crank_arm_inside_x = crank_degree < 0 ? DIAL_CANVAS_ARM_X_ORIGIN - (x_increment * DIAL_ARM_INSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_X_ORIGIN + (x_increment * DIAL_ARM_INSIDE_MULTIPLIER);
+  previous_crank_arm_inside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_ARM_INSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_ARM_INSIDE_MULTIPLIER);
+  previous_crank_arm_outside_x = crank_degree < 0 ? DIAL_CANVAS_ARM_X_ORIGIN - (x_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_X_ORIGIN + (x_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER);
+  previous_crank_arm_outside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_CRANK_ARM_OUTSIDE_MULTIPLIER);
   canvas.drawLine(previous_crank_arm_inside_x, previous_crank_arm_inside_y, previous_crank_arm_outside_x, previous_crank_arm_outside_y, 1);
   //calcualte wheel speed arm
-  float wheel_degree = dial_start_degree + (wheel_speed * dial_ticker_step);
+  float wheel_degree = DIAL_START_DEGREE + (wheel_speed * DIAL_TICKER_STEP);
   angle = wheel_degree < 0 ? -wheel_degree : wheel_degree;
   radians_angle = (angle < 90 ? 90 - angle : angle - 90) * (M_PI / 180.0);
-  y_increment = dial_radius * sin(radians_angle);
-  x_increment = dial_radius * cos(radians_angle);
-  previous_wheel_arm_inside_x = wheel_degree < 0 ? dial_canvas_arm_x_origin - (x_increment * dial_arm_inside_multiplier) : dial_canvas_arm_x_origin + (x_increment * dial_arm_inside_multiplier);
-  previous_wheel_arm_inside_y = angle < 90 ? dial_canvas_arm_y_origin - (y_increment * dial_arm_inside_multiplier) : dial_canvas_arm_y_origin + (y_increment * dial_arm_inside_multiplier);
-  previous_wheel_arm_outside_x = wheel_degree < 0 ? dial_canvas_arm_x_origin - (x_increment * dial_wheel_arm_outside_multiplier) : dial_canvas_arm_x_origin + (x_increment * dial_wheel_arm_outside_multiplier);
-  previous_wheel_arm_outside_y = angle < 90 ? dial_canvas_arm_y_origin - (y_increment * dial_wheel_arm_outside_multiplier) : dial_canvas_arm_y_origin + (y_increment * dial_wheel_arm_outside_multiplier);
+  y_increment = DIAL_RADIUS * sin(radians_angle);
+  x_increment = DIAL_RADIUS * cos(radians_angle);
+  previous_wheel_arm_inside_x = wheel_degree < 0 ? DIAL_CANVAS_ARM_X_ORIGIN - (x_increment * DIAL_ARM_INSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_X_ORIGIN + (x_increment * DIAL_ARM_INSIDE_MULTIPLIER);
+  previous_wheel_arm_inside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_ARM_INSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_ARM_INSIDE_MULTIPLIER);
+  previous_wheel_arm_outside_x = wheel_degree < 0 ? DIAL_CANVAS_ARM_X_ORIGIN - (x_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_X_ORIGIN + (x_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER);
+  previous_wheel_arm_outside_y = angle < 90 ? DIAL_CANVAS_ARM_Y_ORIGIN - (y_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER) : DIAL_CANVAS_ARM_Y_ORIGIN + (y_increment * DIAL_WHEEL_ARM_OUTSIDE_MULTIPLIER);
   canvas.drawLine(previous_wheel_arm_inside_x, previous_wheel_arm_inside_y, previous_wheel_arm_outside_x, previous_wheel_arm_outside_y, 1);
 
   //display section
   //write canvas to screen
-  display.drawBitmap(dial_x_position - (canvas.width() / 2), dial_y_position - ((canvas.height() / 3) * 2), canvas.getBuffer(), canvas.width(), canvas.height(), colour_green);
+  display.drawBitmap(DIAL_X_POSITION - (canvas.width() / 2), DIAL_Y_POSITION - ((canvas.height() / 3) * 2), canvas.getBuffer(), canvas.width(), canvas.height(), COLOUR_GREEN);
   //current number of rotations
   char numerical_text[16];
   itoa(rotation_counter, numerical_text, 10);
-  display.fillCircle(dial_x_position, dial_y_position, rotation_counter_radius, colour_red);
+  display.fillCircle(DIAL_X_POSITION, DIAL_Y_POSITION, DIAL_ROTATION_COUNTER_RADIUS, COLOUR_RED);
   displayCenteredText(
-    dial_x_position, dial_y_position + 5, numerical_text, colour_white, colour_red, rotation_counter_text_scale
+    DIAL_X_POSITION, DIAL_Y_POSITION + 5, numerical_text, COLOUR_WHITE, COLOUR_RED, DIAL_ROTATION_COUNTER_TEXT_SCALE
   );
 
 
@@ -200,8 +200,8 @@ void displayCenteredText(uint16_t x, uint16_t y, char text[], uint16_t text_colo
   int modulo_count = item_count % 2;
   for (int i = 0; i < item_count; i++) {
     display.drawChar(
-      x - ((modulo_count * size * char_width) / 2) - ((half_count - i) * size * char_width) + (size / 2),
-      y - (size * char_height) / 2,
+      x - ((modulo_count * size * CHAR_WIDTH) / 2) - ((half_count - i) * size * CHAR_WIDTH) + (size / 2),
+      y - (size * CHAR_HEIGHT) / 2,
       text[i], text_colour, background_colour, size
     );
   }
