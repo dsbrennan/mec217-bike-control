@@ -28,7 +28,7 @@
 
 // cluster layout
 #define DIAL_X_POSITION 400 // SCREEN_WIDTH / 2
-#define DIAL_Y_POSITION 280 // SCREEN_HEIGHT / 2 + padding (30 in this case)
+#define DIAL_Y_POSITION 270 // SCREEN_HEIGHT / 2 + padding (30 in this case)
 #define DIAL_START_DEGREE -120
 #define DIAL_END_DEGREE 120
 #define DIAL_RADIUS 240 // SCREEN_HEIGHT / 2
@@ -50,6 +50,8 @@
 #define DIAL_COUNTDOWN_Y_POSITION 96 // SCREEN_HEIGHT /  5
 #define DIAL_COUNTDOWN_RADIUS 80 // SCREEN_HEIGHT / 6
 #define DIAL_COUNTDOWN_TEXT_SCALE 9
+#define DIAL_STATUS_Y_POSITION 440 // SCREEN_HEIGHT / 4 * 3
+#define DIAL_STATUS_TEXT_SIZE 3
 
 // control system
 #define CRANK_PASS_MAXIMUM_DELAY 1500 // crank_pass_maximum_delay in student code
@@ -166,6 +168,8 @@ void setup() {
   displayCenteredText(
     DIAL_COUNTDOWN_X_POSITION,  DIAL_COUNTDOWN_Y_POSITION + 5, numerical_text, COLOUR_WHITE, COLOUR_GRAY, DIAL_COUNTDOWN_TEXT_SCALE
   );
+  // system status
+  displayCenteredText(DIAL_X_POSITION, DIAL_STATUS_Y_POSITION, "system ready", COLOUR_WHITE, COLOUR_BLACK, DIAL_STATUS_TEXT_SIZE);
 }
 
 
@@ -310,6 +314,10 @@ void loop() {
   displayCenteredText(
     DIAL_COUNTDOWN_X_POSITION,  DIAL_COUNTDOWN_Y_POSITION + 5, numerical_text, COLOUR_WHITE, timer_active ? COLOUR_GREEN : COLOUR_GRAY, DIAL_COUNTDOWN_TEXT_SCALE
   );
+  // system status
+  char status[12];
+  strcpy(status, timer_active ? "  counting  " : (timer_deactivation_count - timer_activation_count > 0 ? "  complete  " : "system ready"));
+  displayCenteredText(DIAL_X_POSITION, DIAL_STATUS_Y_POSITION, status, COLOUR_WHITE, COLOUR_BLACK, DIAL_STATUS_TEXT_SIZE);
 
   // simulate
   if (current_loop_time - touch_interupt_time > 13000){
