@@ -1,8 +1,8 @@
 /**
  *  Original Author: D S Brennan (github.com/dsbrennan)
- *  Created: 13/01/2024
+ *  Created: 13/01/2025
  *
- *  Copyright 2024, MIT Licence
+ *  Copyright 2025, MIT Licence
  **/
 #include "Arduino_GigaDisplay_GFX.h"
 #include "Arduino_GigaDisplayTouch.h"
