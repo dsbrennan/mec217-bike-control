@@ -29,8 +29,8 @@
 
 // constants, can be tweaked
 const int startup_time = 3000;
-const int esc_initial_power = 85;
-const int esc_power_limit = 180;
+const int esc_initial_power = 45;
+const int esc_power_limit = 140;
 const float esc_step_up = 0.1;
 const float esc_step_down = 0.5;
 
@@ -117,26 +117,26 @@ void loop() {
 
   // crank interrupt within maximum delay
   current_loop_time = millis();
-  if (current_loop_time - crank_interrupt_current_time <= CRANK_PASS_MAXIMUM_DELAY && wheel_kmph <= WHEEL_MAXIMUM_SPEED) {
+  if (crank_interrupt_current_time > startup_time && crank_interrupt_previous_time > startup_time
+      && current_loop_time - crank_interrupt_current_time <= CRANK_PASS_MAXIMUM_DELAY
+      && wheel_kmph <= WHEEL_MAXIMUM_SPEED) {
     // power up ESC
     digitalWrite(MOTOR_ACTIVITY_LED_PIN, HIGH);
     if ((esc_power_output + esc_step_up) <= esc_power_limit) {
       esc_power_output += esc_step_up;
     } else {
       esc_power_output = esc_power_limit;
-    }
-    esc.write((int)esc_power_output);
+    }    
   } else {
     // power down ESC
     digitalWrite(MOTOR_ACTIVITY_LED_PIN, LOW);
     if (esc_power_output - esc_step_down >= esc_initial_power) {
       esc_power_output -= esc_step_down;
-      esc.write((int)esc_power_output);
     } else {
       esc_power_output = esc_initial_power;
-      esc.write(0);
     }
   }
+  esc.write((int)esc_power_output);
 
   // display message
   if (current_loop_time - message_previous_time >= MESSAGE_MAXIMUM_INTERVAL) {
