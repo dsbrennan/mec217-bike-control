@@ -68,11 +68,11 @@ Arduino_GigaDisplayTouch touchDetector;
 
 // control variables
 unsigned volatile long wheel_rotation_counter;
-unsigned volatile long touch_interupt_time;
-unsigned volatile long crank_interupt_current_time;
-unsigned volatile long crank_interupt_previous_time;
-unsigned volatile long wheel_interupt_current_time;
-unsigned volatile long wheel_interupt_previous_time;
+unsigned volatile long touch_interrupt_time;
+unsigned volatile long crank_interrupt_current_time;
+unsigned volatile long crank_interrupt_previous_time;
+unsigned volatile long wheel_interrupt_current_time;
+unsigned volatile long wheel_interrupt_previous_time;
 unsigned long current_loop_time;
 unsigned long timer_activation_time;
 signed int timer_activation_count;
@@ -97,24 +97,24 @@ void setup() {
   delay(3000);
   // set counting default values
   wheel_rotation_counter = 0;
-  touch_interupt_time = 0;
-  crank_interupt_current_time = 0;
-  crank_interupt_previous_time = 0;
-  wheel_interupt_current_time = 0;
-  wheel_interupt_previous_time = 0;
+  touch_interrupt_time = 0;
+  crank_interrupt_current_time = 0;
+  crank_interrupt_previous_time = 0;
+  wheel_interrupt_current_time = 0;
+  wheel_interrupt_previous_time = 0;
   current_loop_time = 0;
   timer_activation_time = 0;
   timer_activation_count = -1;
   timer_deactivation_count = -1;
   // setup crank sensor
   pinMode(CRANK_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(CRANK_PIN), crankInterupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(CRANK_PIN), crankInterrupt, FALLING);
   // setup wheel sensor
   pinMode(WHEEL_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(WHEEL_PIN), wheelInterupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(WHEEL_PIN), wheelInterrupt, FALLING);
   // setup touch
   touchDetector.begin();
-  touchDetector.onDetect(touchInterupt);
+  touchDetector.onDetect(touchInterrupt);
   //setup blank horizontal screen
   display.begin();  // Init display library
   display.setRotation(SCREEN_ROTATE);
@@ -181,25 +181,25 @@ void loop() {
   */
   current_loop_time = millis();
   if(
-    touch_interupt_time > 0 && timer_activation_count >= 0
-    && current_loop_time - touch_interupt_time > TOUCH_RESET_MINIMUM_DELAY 
-    && current_loop_time - touch_interupt_time < TOUCH_RESET_MAXIMUM_DELAY
+    touch_interrupt_time > 0 && timer_activation_count >= 0
+    && current_loop_time - touch_interrupt_time > TOUCH_RESET_MINIMUM_DELAY 
+    && current_loop_time - touch_interrupt_time < TOUCH_RESET_MAXIMUM_DELAY
   ){
     // reset system
     wheel_rotation_counter = 0;
-    crank_interupt_current_time = 0;
-    crank_interupt_previous_time = 0;
-    wheel_interupt_current_time = 0;
-    wheel_interupt_previous_time = 0;
+    crank_interrupt_current_time = 0;
+    crank_interrupt_previous_time = 0;
+    wheel_interrupt_current_time = 0;
+    wheel_interrupt_previous_time = 0;
     timer_activation_time = 0;
     timer_activation_count = -1;
     timer_deactivation_count = -1;
     Serial.println("system reset");
   }
   if(
-    crank_interupt_current_time > 0 && crank_interupt_previous_time > 0
-    && (crank_interupt_current_time - crank_interupt_previous_time > 0)
-    && current_loop_time - crank_interupt_current_time <= CRANK_PASS_MAXIMUM_DELAY
+    crank_interrupt_current_time > 0 && crank_interrupt_previous_time > 0
+    && (crank_interrupt_current_time - crank_interrupt_previous_time > 0)
+    && current_loop_time - crank_interrupt_current_time <= CRANK_PASS_MAXIMUM_DELAY
   ){
     // start timer
     if (timer_activation_count < 0 && timer_deactivation_count < 0){
@@ -217,8 +217,8 @@ void loop() {
   }
   // crank speed
   float crank_speed = 0.0;
-  if(crank_interupt_current_time > 0 && crank_interupt_previous_time > 0){
-    float crank_pass_delta = crank_interupt_current_time - crank_interupt_previous_time;
+  if(crank_interrupt_current_time > 0 && crank_interrupt_previous_time > 0){
+    float crank_pass_delta = crank_interrupt_current_time - crank_interrupt_previous_time;
     float rpm_value = (float)60000.0 / crank_pass_delta;
     float rph_value = rpm_value * 60;
     float rph_meter = rph_value * CRANK_CIRCUMFORANCE;
@@ -226,8 +226,8 @@ void loop() {
   }
   // wheel speed
   float wheel_speed = 0.0;
-  if(wheel_interupt_current_time > 0 && wheel_interupt_previous_time > 0){
-    float wheel_pass_delta = wheel_interupt_current_time - wheel_interupt_previous_time;
+  if(wheel_interrupt_current_time > 0 && wheel_interrupt_previous_time > 0){
+    float wheel_pass_delta = wheel_interrupt_current_time - wheel_interrupt_previous_time;
     float rpm_value = (float)60000.0 / wheel_pass_delta;
     float rph_value = rpm_value * 60;
     float rph_meter = rph_value * WHEEL_CIRCUMFORANCE;
@@ -320,13 +320,13 @@ void loop() {
   displayCenteredText(DIAL_X_POSITION, DIAL_STATUS_Y_POSITION, status, COLOUR_WHITE, COLOUR_BLACK, DIAL_STATUS_TEXT_SIZE);
 
   // simulate
-  if (current_loop_time - touch_interupt_time > 13000){
-    crank_interupt_previous_time = current_loop_time - 1000;
-    crank_interupt_current_time = current_loop_time;
+  if (current_loop_time - touch_interrupt_time > 13000){
+    crank_interrupt_previous_time = current_loop_time - 1000;
+    crank_interrupt_current_time = current_loop_time;
     wheel_rotation_counter = (current_loop_time - 13000) / 2000;
-    float acceleration = 10000.0 - (((current_loop_time - touch_interupt_time - 13000.0)/1000.0)*500.0);
-    wheel_interupt_previous_time = current_loop_time - (acceleration > 290 ? acceleration : 290);
-    wheel_interupt_current_time = current_loop_time;
+    float acceleration = 10000.0 - (((current_loop_time - touch_interrupt_time - 13000.0)/1000.0)*500.0);
+    wheel_interrupt_previous_time = current_loop_time - (acceleration > 290 ? acceleration : 290);
+    wheel_interrupt_current_time = current_loop_time;
   }
 
   // sleep thread
@@ -334,31 +334,31 @@ void loop() {
 }
 
 /*
-  Crank Sensor Interupt
+  Crank Sensor Interrupt
   ---------------------
 */
-void crankInterupt(){
-  crank_interupt_previous_time = crank_interupt_current_time;
-  crank_interupt_current_time = millis();
+void crankInterrupt(){
+  crank_interrupt_previous_time = crank_interrupt_current_time;
+  crank_interrupt_current_time = millis();
 }
 
 /*
-  Wheel Sensor Interupt
+  Wheel Sensor Interrupt
   ---------------------
 */
-void wheelInterupt(){
+void wheelInterrupt(){
   wheel_rotation_counter = wheel_rotation_counter + 1;
-  wheel_interupt_previous_time = wheel_interupt_current_time;
-  wheel_interupt_current_time = millis();
+  wheel_interrupt_previous_time = wheel_interrupt_current_time;
+  wheel_interrupt_current_time = millis();
 }
 
 /*
-  Touch Interupt
+  Touch Interrupt
   --------------
 */
-void touchInterupt(uint8_t contacts, GDTpoint_t* points){
+void touchInterrupt(uint8_t contacts, GDTpoint_t* points){
   if(contacts >= 3){
-    touch_interupt_time = millis();
+    touch_interrupt_time = millis();
   }
 }
 
