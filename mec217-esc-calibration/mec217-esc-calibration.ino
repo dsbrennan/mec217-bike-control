@@ -16,7 +16,7 @@
 #define DELAY_UNIT 5000
 
 // esc constants
-const int esc_neutral_power = 30;
+const int esc_neutral_power = 45;
 const int esc_forward_power = 180;
 const int esc_reverse_power = 0;
 
@@ -43,10 +43,13 @@ void setup() {
   esc.attach(ESC_PIN);
   esc.write(esc_neutral_power);
   delay(DELAY_UNIT);
+  Serial.println("Ready");
+  delay(DELAY_UNIT);
 
   // turn on esc
+
   Serial.println("Turn on ESC: hold down the SET button and power button untill it beeps");
-  delay(3 * DELAY_UNIT);
+  delay(5 * DELAY_UNIT);
 
   // set neutral position
   digitalWrite(SYSTEM_READY_LED_PIN, HIGH);
